@@ -10,7 +10,7 @@ from fats_features import Feature, get_all_subclasses
 from collections import OrderedDict
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels \
-    import RBF, WhiteKernel, ExpSineSquared
+    import RBF, WhiteKernel, ExpSineSquared, RationalQuadratic
 
 
 dateparser = lambda x: Time(np.float32(x), format='jd')
@@ -54,6 +54,7 @@ class LC(object):
         mag = self.mag
         err = self.err
         plt.errorbar(mjd, mag, err, fmt=fmt)
+        plt.gca().invert_yaxis()
         plt.show()
         return fig
 
@@ -193,52 +194,125 @@ class LC(object):
         return trended
 
 
-class PeriodicLC(LC):
-    def fitGP(self, long_term_length_scale=None,
-              pre_periodic_term_length_scale=None,
-              periodic_term_length_scale=None, periodicity=None,
-              noise_level=None, do_plot=False):
+class GPFitLC(LC):
+
+    def __init__(self, fname):
+        super(GPFitLC, self).__init__(fname)
+        self._gp = None
+
+    def generate(self, lc, n_samples=1):
+        data = lc.data[['mjd', 'mag', 'err']]
+        data = np.atleast_2d(data)
+        time = data[:, 0] - data[0, 0]
+        time = np.atleast_2d(time).T
+        samples_mag = self._gp.sample_y(time, n_samples=n_samples)
+        for samples in samples_mag.T:
+            lc.mag = samples
+            yield lc
+
+
+class PeriodicLC(GPFitLC):
+
+    def fit(self, long_term_length_scale=None,
+            pre_periodic_term_length_scale=None,
+            periodic_term_length_scale=None, periodicity=None,
+            noise_level=None, do_plot=False):
 
         data = self.data[['mjd', 'mag', 'err']]
         data = np.atleast_2d(data)
         time = data[:, 0] - data[0, 0]
         time = np.atleast_2d(time).T
-        time_scale = data[-1, 0] - data[0, 0]
-        data_scale = np.max(data[:, 1]) - np.min(data[:, 1])
-        noise_std = np.std(data[:, 2])
 
-        if long_term_length_scale is None:
-            long_term_length_scale = 0.5 * time_scale
+        if self._gp is None:
+            time_scale = data[-1, 0] - data[0, 0]
+            data_scale = np.max(data[:, 1]) - np.min(data[:, 1])
+            noise_std = np.std(data[:, 2])
 
-        if pre_periodic_term_length_scale is None:
-            pre_periodic_term_length_scale = 0.5 * time_scale
+            if long_term_length_scale is None:
+                long_term_length_scale = 0.5 * time_scale
 
-        if periodic_term_length_scale is None:
-            periodic_term_length_scale = 0.1 * time_scale
+            if pre_periodic_term_length_scale is None:
+                pre_periodic_term_length_scale = 0.5 * time_scale
 
-        if periodicity is None:
-            periodicity = 0.1 * time_scale
+            if periodic_term_length_scale is None:
+                periodic_term_length_scale = 0.1 * time_scale
 
-        if noise_level is None:
-            noise_level = noise_std
+            if periodicity is None:
+                periodicity = 0.1 * time_scale
 
-        k1 = data_scale ** 2 * RBF(length_scale=long_term_length_scale)
-        k2 = 0.1 * data_scale * RBF(length_scale=pre_periodic_term_length_scale) *\
-          ExpSineSquared(length_scale=periodic_term_length_scale,
-                         periodicity=periodicity)
-        k3 = WhiteKernel(noise_level=noise_level ** 2,
-                         noise_level_bounds=(1e-3, np.inf))
-        kernel = k1 + k2 + k3
-        gp = GaussianProcessRegressor(kernel=kernel,
-                                      alpha=(data[:, 2] / data[:, 1]) ** 2,
-                                      normalize_y=True)
-        gp.fit(time, data[:, 1])
+            if noise_level is None:
+                noise_level = noise_std
+
+            k1 = data_scale ** 2 * RBF(length_scale=long_term_length_scale)
+            k2 = 0.1 * data_scale *\
+                 RBF(length_scale=pre_periodic_term_length_scale) *\
+                 ExpSineSquared(length_scale=periodic_term_length_scale,
+                                periodicity=periodicity)
+            k3 = WhiteKernel(noise_level=noise_level ** 2,
+                             noise_level_bounds=(1e-3, np.inf))
+            kernel = k1 + k2 + k3
+            gp = GaussianProcessRegressor(kernel=kernel,
+                                          alpha=(data[:, 2] / data[:, 1]) ** 2,
+                                          normalize_y=True)
+            gp.fit(time, data[:, 1])
+            self._gp = gp
 
         if do_plot:
             X_ = np.linspace(time.min() - 50,
                              time.max() + 50, 1000)[:, np.newaxis]
-            y_pred, y_std = gp.predict(X_, return_std=True)
-            samples_X_ = gp.sample_y(X_, n_samples=10)
+            y_pred, y_std = self._gp.predict(X_, return_std=True)
+            plt.errorbar(time, data[:, 1], data[:, 2], fmt='k.')
+            plt.plot(X_, y_pred)
+            plt.fill_between(X_[:, 0], y_pred - y_std, y_pred + y_std,
+                             alpha=0.5, color='k')
+            plt.xlim(X_.min(), X_.max())
+            plt.gca().invert_yaxis()
+            plt.xlabel("MJD from {}".format(data[0, 0] - 50))
+            plt.ylabel("Magnitude")
+            plt.tight_layout()
+            plt.show()
+
+
+class APeriodicLC(GPFitLC):
+
+    def fit(self, long_term_length_scale=None, short_term_length_scale=None,
+            noise_level=None, do_plot=False):
+
+        data = self.data[['mjd', 'mag', 'err']]
+        data = np.atleast_2d(data)
+        time = data[:, 0] - data[0, 0]
+        time = np.atleast_2d(time).T
+
+        if self._gp is None:
+            time_scale = data[-1, 0] - data[0, 0]
+            data_scale = np.max(data[:, 1]) - np.min(data[:, 1])
+            noise_std = np.std(data[:, 2])
+
+            if long_term_length_scale is None:
+                long_term_length_scale = 0.5 * time_scale
+
+            if short_term_length_scale is None:
+                short_term_length_scale = 0.05 * time_scale
+
+            if noise_level is None:
+                noise_level = noise_std
+
+            k1 = data_scale ** 2 *\
+                 RationalQuadratic(length_scale=long_term_length_scale)
+            k2 = 0.1 * data_scale * RBF(length_scale=short_term_length_scale)
+            k3 = WhiteKernel(noise_level=noise_level ** 2,
+                             noise_level_bounds=(1e-3, np.inf))
+            kernel = k1 + k2 + k3
+            gp = GaussianProcessRegressor(kernel=kernel,
+                                          alpha=(data[:, 2] / data[:, 1]) ** 2,
+                                          normalize_y=True)
+            gp.fit(time, data[:, 1])
+            self._gp = gp
+
+        if do_plot:
+            X_ = np.linspace(time.min() - 50,
+                             time.max() + 50, 1000)[:, np.newaxis]
+            y_pred, y_std = self._gp.predict(X_, return_std=True)
             plt.errorbar(time, data[:, 1], data[:, 2], fmt='k.')
             plt.plot(X_, y_pred)
             plt.fill_between(X_[:, 0], y_pred - y_std, y_pred + y_std,
@@ -252,10 +326,23 @@ class PeriodicLC(LC):
 
 
 if __name__ == '__main__':
-    lc = PeriodicLC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_28995.dat')
-    lc.fitGP(do_plot=True)
-    features_fats = lc.generate_features_fats()
-    features_tsfresh = lc.generate_features_tsfresh()
-    lc.add_features(features_fats)
-    lc.add_features(features_tsfresh)
-    print(lc.features)
+    # Test periodic variable
+    # lc = PeriodicLC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_28995.dat')
+    # lc.fit(do_plot=True)
+    # lc_ = LC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_180039.dat')
+    # lc.fit(do_plot=True)
+    # for lc__ in lc.generate(lc_, n_samples=4):
+    #     lc__.plot()
+
+    # features_fats = lc.generate_features_fats()
+    # features_tsfresh = lc.generate_features_tsfresh()
+    # lc.add_features(features_fats)
+    # lc.add_features(features_tsfresh)
+    # print(lc.features)
+
+    # Test a-periodic variable
+    lc = APeriodicLC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_38470.dat')
+    lc.fit(do_plot=True)
+    lc_ = LC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_180039.dat')
+    for lc__ in lc.generate(lc_, n_samples=4):
+        lc__.plot()
