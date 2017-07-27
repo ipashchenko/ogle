@@ -194,10 +194,10 @@ class LC(object):
         return trended
 
 
-class GPFitLC(LC):
+class VariableStarLC(LC):
 
     def __init__(self, fname):
-        super(GPFitLC, self).__init__(fname)
+        super(VariableStarLC, self).__init__(fname)
         self._gp = None
 
     def generate(self, lc, n_samples=1):
@@ -211,7 +211,7 @@ class GPFitLC(LC):
             yield lc
 
 
-class PeriodicLC(GPFitLC):
+class PeriodicLC(VariableStarLC):
 
     def fit(self, long_term_length_scale=None,
             pre_periodic_term_length_scale=None,
@@ -273,7 +273,7 @@ class PeriodicLC(GPFitLC):
             plt.show()
 
 
-class APeriodicLC(GPFitLC):
+class APeriodicLC(VariableStarLC):
 
     def fit(self, long_term_length_scale=None, short_term_length_scale=None,
             noise_level=None, do_plot=False):
