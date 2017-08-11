@@ -112,7 +112,7 @@ class LC(object):
         data_available_combs = (['magnitude'],
                                 ['magnitude', 'time'],
                                 ['magnitude', 'time', 'error'])
-        data = lc.data[['mag', 'mjd', 'err']]
+        data = self.data[['mag', 'mjd', 'err']]
         data = np.atleast_2d(data).T
 
         features_dfs = list()
