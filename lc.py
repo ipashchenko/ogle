@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from scipy.stats import linregress
 from tsfresh import extract_features
 from tsfresh.utilities.dataframe_functions import impute
 import matplotlib.pyplot as plt
@@ -193,6 +194,30 @@ class LC(object):
         trended.mag += a*mjd + b
         return trended
 
+    def estimate_trend(self):
+        """
+        Estimate linear trend of the light curve.
+
+        :return:
+        slope : float
+            Slope of the regression line normed on median magnitude.
+        intercept : float
+            Intercept of the regression line centered on median magnitude.
+        rvalue : float
+            correlation coefficient
+        pvalue : float
+            two-sided p-value for a hypothesis test whose null hypothesis is
+            that the slope is zero.
+        stderr : float
+            Standard error of the estimated gradient.
+        """
+        time = self.mjd
+        time -= time[0]
+        result = linregress(time, self.mag)
+        slope, intercept, R, p, _ = result
+        print(slope, intercept, R, p, _)
+        return slope/self.mag.median(), intercept-self.mag.median(), R, p, _
+
 
 class VariableStarLC(LC):
 
@@ -201,6 +226,16 @@ class VariableStarLC(LC):
         self._gp = None
 
     def generate(self, lc, n_samples=1):
+        """
+        Generate light curve using fitted Gaussian Process on current instance
+        of ``LC`` and observations of some other instance of ``LC``.
+        :param lc:
+            Instance of ``LC``.
+        :param n_samples: (optional)
+            Number of generated light curves to return. (default: ``1``)
+        :return:
+            Generator of ``LC`` instances.
+        """
         data = lc.data[['mjd', 'mag', 'err']]
         data = np.atleast_2d(data)
         time = data[:, 0] - data[0, 0]
@@ -210,13 +245,35 @@ class VariableStarLC(LC):
             lc.mag = samples
             yield lc
 
+    def plot_fitted(self, fig=None):
+        data = self.data[['mjd', 'mag', 'err']]
+        data = np.atleast_2d(data)
+        time = data[:, 0] - data[0, 0]
+        time = np.atleast_2d(time).T
+
+        X_ = np.linspace(time.min() - 50,
+                         time.max() + 50, 1000)[:, np.newaxis]
+        y_pred, y_std = self._gp.predict(X_, return_std=True)
+        if not fig:
+            fig = plt.figure()
+        plt.errorbar(time, data[:, 1], data[:, 2], fmt='k.')
+        plt.plot(X_, y_pred)
+        plt.fill_between(X_[:, 0], y_pred - y_std, y_pred + y_std,
+                         alpha=0.5, color='k')
+        plt.xlim(X_.min(), X_.max())
+        plt.gca().invert_yaxis()
+        plt.xlabel("MJD from {}".format(data[0, 0] - 50))
+        plt.ylabel("Magnitude")
+        plt.tight_layout()
+        plt.show()
+
 
 class PeriodicLC(VariableStarLC):
 
     def fit(self, long_term_length_scale=None,
             pre_periodic_term_length_scale=None,
             periodic_term_length_scale=None, periodicity=None,
-            noise_level=None, do_plot=False):
+            noise_level=None, do_plot=False, fig=None):
 
         data = self.data[['mjd', 'mag', 'err']]
         data = np.atleast_2d(data)
@@ -249,34 +306,23 @@ class PeriodicLC(VariableStarLC):
                  ExpSineSquared(length_scale=periodic_term_length_scale,
                                 periodicity=periodicity)
             k3 = WhiteKernel(noise_level=noise_level ** 2,
-                             noise_level_bounds=(1e-3, np.inf))
+                             noise_level_bounds=(1e-3, 1.))
             kernel = k1 + k2 + k3
             gp = GaussianProcessRegressor(kernel=kernel,
                                           alpha=(data[:, 2] / data[:, 1]) ** 2,
-                                          normalize_y=True)
+                                          normalize_y=True,
+                                          n_restarts_optimizer=10)
             gp.fit(time, data[:, 1])
             self._gp = gp
 
         if do_plot:
-            X_ = np.linspace(time.min() - 50,
-                             time.max() + 50, 1000)[:, np.newaxis]
-            y_pred, y_std = self._gp.predict(X_, return_std=True)
-            plt.errorbar(time, data[:, 1], data[:, 2], fmt='k.')
-            plt.plot(X_, y_pred)
-            plt.fill_between(X_[:, 0], y_pred - y_std, y_pred + y_std,
-                             alpha=0.5, color='k')
-            plt.xlim(X_.min(), X_.max())
-            plt.gca().invert_yaxis()
-            plt.xlabel("MJD from {}".format(data[0, 0] - 50))
-            plt.ylabel("Magnitude")
-            plt.tight_layout()
-            plt.show()
+            self.plot_fitted(fig=fig)
 
 
 class APeriodicLC(VariableStarLC):
 
     def fit(self, long_term_length_scale=None, short_term_length_scale=None,
-            noise_level=None, do_plot=False):
+            noise_level=None, do_plot=False, fig=None):
 
         data = self.data[['mjd', 'mag', 'err']]
         data = np.atleast_2d(data)
@@ -310,29 +356,16 @@ class APeriodicLC(VariableStarLC):
             self._gp = gp
 
         if do_plot:
-            X_ = np.linspace(time.min() - 50,
-                             time.max() + 50, 1000)[:, np.newaxis]
-            y_pred, y_std = self._gp.predict(X_, return_std=True)
-            plt.errorbar(time, data[:, 1], data[:, 2], fmt='k.')
-            plt.plot(X_, y_pred)
-            plt.fill_between(X_[:, 0], y_pred - y_std, y_pred + y_std,
-                             alpha=0.5, color='k')
-            plt.xlim(X_.min(), X_.max())
-            plt.gca().invert_yaxis()
-            plt.xlabel("MJD from {}".format(data[0, 0] - 50))
-            plt.ylabel("Magnitude")
-            plt.tight_layout()
-            plt.show()
+            self.plot_fitted(fig=fig)
 
 
 if __name__ == '__main__':
     # Test periodic variable
-    # lc = PeriodicLC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_28995.dat')
-    # lc.fit(do_plot=True)
-    # lc_ = LC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_180039.dat')
-    # lc.fit(do_plot=True)
-    # for lc__ in lc.generate(lc_, n_samples=4):
-    #     lc__.plot()
+    lc = PeriodicLC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_28995.dat')
+    lc.fit(do_plot=True)
+    lc_ = LC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_180039.dat')
+    for lc__ in lc.generate(lc_, n_samples=4):
+        lc__.plot()
 
     # features_fats = lc.generate_features_fats()
     # features_tsfresh = lc.generate_features_tsfresh()
@@ -341,8 +374,13 @@ if __name__ == '__main__':
     # print(lc.features)
 
     # Test a-periodic variable
-    lc = APeriodicLC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_38470.dat')
-    lc.fit(do_plot=True)
-    lc_ = LC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_180039.dat')
-    for lc__ in lc.generate(lc_, n_samples=4):
-        lc__.plot()
+    # lc = APeriodicLC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_38470.dat')
+    # lc.fit(do_plot=True)
+    # lc_ = LC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_180039.dat')
+    # for lc__ in lc.generate(lc_, n_samples=4):
+    #     lc__.plot()
+
+    # Test trend
+    # lc = LC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_25801.dat')
+    # lc.plot()
+    # slope, intercept, R, p, _ = lc.estimate_trend()
