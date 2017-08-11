@@ -360,27 +360,30 @@ class APeriodicLC(VariableStarLC):
 
 
 if __name__ == '__main__':
-    # Test periodic variable
+    # Test features calculation
     lc = PeriodicLC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_28995.dat')
-    lc.fit(do_plot=True)
-    lc_ = LC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_180039.dat')
-    for lc__ in lc.generate(lc_, n_samples=4):
-        lc__.plot()
+    features_fats = lc.generate_features_fats()
+    features_tsfresh = lc.generate_features_tsfresh()
+    lc.add_features(features_fats)
+    lc.add_features(features_tsfresh)
+    print(lc.features)
 
-    # features_fats = lc.generate_features_fats()
-    # features_tsfresh = lc.generate_features_tsfresh()
-    # lc.add_features(features_fats)
-    # lc.add_features(features_tsfresh)
-    # print(lc.features)
+    # # Test periodic variable
+    # lc = PeriodicLC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_28995.dat')
+    # lc.fit(do_plot=True)
+    # # This LC gives us data points where to generate new LCs
+    # lc_ = LC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_180039.dat')
+    # for lc__ in lc.generate(lc_, n_samples=4):
+    #     lc__.plot()
 
-    # Test a-periodic variable
+    # # Test a-periodic variable
     # lc = APeriodicLC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_38470.dat')
     # lc.fit(do_plot=True)
     # lc_ = LC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_180039.dat')
     # for lc__ in lc.generate(lc_, n_samples=4):
     #     lc__.plot()
 
-    # Test trend
+    # # Test trend
     # lc = LC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_25801.dat')
     # lc.plot()
     # slope, intercept, R, p, _ = lc.estimate_trend()
