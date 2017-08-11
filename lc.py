@@ -82,6 +82,21 @@ class LC(object):
         return self.data['mjd']
 
     @property
+    def datetime(self):
+        """
+        Return times as python datetime objects. Could be used as ``dates``
+        argument in ``statsmodels.tsa`` objects.
+
+        >>> from statsmodels.tsa.ar_model import AR
+        >>> ar = AR(lc.mag, dates=lc.datetime)
+        >>> result = ar.fit(maxlag=1, method='mle')
+
+        """
+        t = Time(self.data['mjd'], format='jd', scale='utc')
+        t = [t_.datetime for t_ in t]
+        return t
+
+    @property
     def err(self):
         return self.data['err']
 
