@@ -59,44 +59,26 @@ for source_file, destination_file in zip((vars_file, const_file),
         for name in names:
             print(name, file=fo)
 
-# For variables
-with open(vars_fname_file, 'r') as fo:
-    vars_fnames = fo.readlines()
-vars_fnames = [var_fname.strip('\n') for var_fname in vars_fnames]
-vars_fnames = [os.path.join(data_dir, var_fname) for var_fname in vars_fnames]
+# # For variables
+# with open(vars_fname_file, 'r') as fo:
+#     vars_fnames = fo.readlines()
+# vars_fnames = [var_fname.strip('\n') for var_fname in vars_fnames]
+# vars_fnames = [os.path.join(data_dir, var_fname) for var_fname in vars_fnames]
+# import time
+# t0 = time.time()
+# features_df = calculate_features_for_files(vars_fnames, threads=5)
+# print(time.time() - t0)
+#
+# features_df.to_pickle(os.path.join(data_dir, 'features_vars.pkl'))
+
+# For constant
 import time
+with open(const_fname_file, 'r') as fo:
+    consts_fnames = fo.readlines()
+consts_fnames = [const_fname.strip('\n') for const_fname in consts_fnames]
+consts_fnames = [os.path.join(data_dir, const_fname) for const_fname in consts_fnames]
 t0 = time.time()
-result = calculate_features_for_files(vars_fnames[:20], threads=4)
+features_df = calculate_features_for_files(consts_fnames, threads=5)
 print(time.time() - t0)
 
-# features_list = list()
-# t0 = time.time()
-# for var_fname in vars_fnames[:20]:
-#     lc = LC(os.path.join(data_dir, var_fname))
-#     features_fats = lc.generate_features_fats()
-#     features_tsfresh = lc.generate_features_tsfresh()
-#     lc.add_features(features_fats)
-#     lc.add_features(features_tsfresh)
-#     features_list.append(lc.features)
-#
-# features_df = pd.concat(features_list, axis=0)
-# print(time.time() - t0)
-# features_df.to_pickle(os.path.join(data_dir, 'features_vars.pkl'))
-#
-# # For constant
-# with open(const_fname_file, 'r') as fo:
-#     consts_fnames = fo.readlines()
-# consts_fnames = [const_fname.strip('\n') for const_fname in consts_fnames]
-#
-# features_list = list()
-#
-# for const_fname in consts_fnames:
-#     lc = LC(os.path.join(data_dir, const_fname))
-#     features_fats = lc.generate_features_fats()
-#     features_tsfresh = lc.generate_features_tsfresh()
-#     lc.add_features(features_fats)
-#     lc.add_features(features_tsfresh)
-#     features_list.append(lc.features)
-#
-# features_df = pd.concat(features_list, axis=0)
-# features_df.to_pickle(os.path.join(data_dir, 'features_const.pkl'))
+features_df.to_pickle(os.path.join(data_dir, 'features_const.pkl'))
