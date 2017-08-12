@@ -40,7 +40,7 @@ def calculate_features_for_files(fnames, threads=4):
     result = pool.map(calculate_features_for_file, fnames)
     pool.close()
     pool.join()
-    return pd.concat(result, axis=0)
+    return pd.concat(result, axis=0, ignore_index=True)
 
 
 data_dir = "/home/ilya/Dropbox/papers/ogle2/data"
