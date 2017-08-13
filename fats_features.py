@@ -223,7 +223,7 @@ class SlottedA_length(Feature):
         self._value = slots[k] * self.T
 
 
-class StetsonK_AC(SlottedA_length):
+class StetsonK_AC(Feature):
 
     Data = ['magnitude', 'time', 'error']
     depends = {"SlottedA_length"}
