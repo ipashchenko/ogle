@@ -90,3 +90,16 @@ best = fmin(fn=objective,
 
 pprint(hyperopt.space_eval(space, best))
 best_pars = hyperopt.space_eval(space, best)
+
+clf = LogisticRegression(C=0.011, class_weight={0: 1, 1: 4.36},
+                         random_state=1, max_iter=300, n_jobs=1,
+                         tol=10. ** (-2), penalty='l1')
+
+estimators = list()
+estimators.append(('imputer', Imputer(missing_values='NaN', strategy='median',
+                                      axis=0, verbose=2)))
+estimators.append(('variance_thresholder', VarianceThreshold()))
+estimators.append(('scaler', RobustScaler()))
+estimators.append(('clf', clf))
+pipeline = Pipeline(estimators)
+pipeline.fit(X, y)
