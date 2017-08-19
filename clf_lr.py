@@ -46,6 +46,19 @@ def objective(space):
     estimators.append(('clf', clf))
     pipeline = Pipeline(estimators)
 
+    # This for w/o CV-predict
+    # CMs = list()
+    #
+    # for i, (train_idx, test_idx) in enumerate(kfold.split(X, y)):
+    #     print("Doing fold {} of 4".format(i+1))
+    #     X_train, y_train = X[train_idx], y[train_idx]
+    #     X_test, y_test = X[test_idx], y[test_idx]
+    #     pipeline.fit(X_train, y_train)
+    #     y_pred = pipeline.predict(X_test)
+    #     CMs.append(confusion_matrix(y_test, y_pred))
+    #
+    # CM = np.sum(CMs, axis=0)
+
     y_preds = cross_val_predict(pipeline, X, y, cv=kfold, n_jobs=4)
     CMs = list()
     for train_idx, test_idx in kfold.split(X, y):
