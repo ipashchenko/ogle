@@ -2,6 +2,8 @@ import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit
 
 
+# TODO: Better try mlxtend (https://github.com/rasbt/mlxtend) with stacking
+# http://rasbt.github.io/mlxtend/user_guide/classifier/StackingClassifier/
 class StackingEstimator(object):
     """
     Stacking method. Use prediction of several base classifiers as features with
