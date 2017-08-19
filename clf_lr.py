@@ -64,8 +64,8 @@ def objective(space):
 
     return{'loss': 1-f1, 'status': STATUS_OK}
 
-space = {'C': hp.loguniform('C', -3.0, 5.0),
-         'cw': hp.uniform('cw', 0.5, 30)}
+space = {'C': hp.loguniform('C', -6.6, -2.2),
+         'cw': hp.uniform('cw', 3, 10)}
 
 
 trials = Trials()
