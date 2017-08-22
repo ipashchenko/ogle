@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import pandas as pd
 from scipy.stats import linregress
@@ -20,9 +21,9 @@ dateparser = lambda x: Time(np.float32(x), format='jd')
 class LC(object):
     _column_names = ['mjd', 'mag', 'err']
 
-    def __init__(self, fname):
-        self.fname = fname
-        self.data = pd.read_table(fname, sep=" ", names=self._column_names,
+    def __init__(self, path):
+        self.dir, self.fname = os.path.split(path)
+        self.data = pd.read_table(path, sep=" ", names=self._column_names,
                                   engine='python', usecols=[0, 1, 2])
                                   # parse_dates=['mjd'],
                                   # date_parser=dateparser)
