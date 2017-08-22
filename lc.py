@@ -338,7 +338,7 @@ class PeriodicLC(VariableStarLC):
         if self._gp is None:
             time_scale = data[-1, 0] - data[0, 0]
             data_scale = np.max(data[:, 1]) - np.min(data[:, 1])
-            noise_std = np.std(data[:, 2])
+            noise_std = np.median(data[:, 2])
 
             if long_term_length_scale is None:
                 long_term_length_scale = 0.5 * time_scale
