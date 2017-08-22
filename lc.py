@@ -268,6 +268,7 @@ class VariableStarLC(LC):
         samples_mag = self._gp.sample_y(time, n_samples=n_samples)
         for samples in samples_mag.T:
             lc.mag = samples
+            lc.err = self.err
             yield lc
 
     def plot_fitted(self, fig=None):
