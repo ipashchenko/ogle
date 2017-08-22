@@ -44,32 +44,32 @@ def calculate_features_for_files(fnames, threads=4):
 
 
 data_dir = "/home/ilya/Dropbox/papers/ogle2/data"
-vars_file = "/home/ilya/Downloads/LMC_SC20__corrected_list_of_variables/raw_index_values/vast_lightcurve_statistics_variables_only.log"
-const_file = "/home/ilya/Downloads/LMC_SC20__corrected_list_of_variables/raw_index_values/vast_lightcurve_statistics_constant_only.log"
+# vars_file = "/home/ilya/Downloads/LMC_SC20__corrected_list_of_variables/raw_index_values/vast_lightcurve_statistics_variables_only.log"
+# const_file = "/home/ilya/Downloads/LMC_SC20__corrected_list_of_variables/raw_index_values/vast_lightcurve_statistics_constant_only.log"
 vars_fname_file = os.path.join(data_dir, "LMC_SC20_vars_lcfnames.txt")
 const_fname_file = os.path.join(data_dir, "LMC_SC20_const_lcfnames.txt")
 
-for source_file, destination_file in zip((vars_file, const_file),
-                                         (vars_fname_file, const_fname_file)):
-    data = np.loadtxt(source_file, dtype=str)
-    names = list()
-    for name in data[:, 4]:
-        names.append(name[4:])
-    with open(destination_file, 'w') as fo:
-        for name in names:
-            print(name, file=fo)
+# for source_file, destination_file in zip((vars_file, const_file),
+#                                          (vars_fname_file, const_fname_file)):
+#     data = np.loadtxt(source_file, dtype=str)
+#     names = list()
+#     for name in data[:, 4]:
+#         names.append(name[4:])
+#     with open(destination_file, 'w') as fo:
+#         for name in names:
+#             print(name, file=fo)
 
-# # For variables
-# with open(vars_fname_file, 'r') as fo:
-#     vars_fnames = fo.readlines()
-# vars_fnames = [var_fname.strip('\n') for var_fname in vars_fnames]
-# vars_fnames = [os.path.join(data_dir, var_fname) for var_fname in vars_fnames]
-# import time
-# t0 = time.time()
-# features_df = calculate_features_for_files(vars_fnames, threads=5)
-# print(time.time() - t0)
-#
-# features_df.to_pickle(os.path.join(data_dir, 'features_vars.pkl'))
+# For variables
+with open(vars_fname_file, 'r') as fo:
+    vars_fnames = fo.readlines()
+vars_fnames = [var_fname.strip('\n') for var_fname in vars_fnames]
+vars_fnames = [os.path.join(data_dir, var_fname) for var_fname in vars_fnames]
+import time
+t0 = time.time()
+features_df = calculate_features_for_files(vars_fnames, threads=5)
+print(time.time() - t0)
+
+features_df.to_pickle(os.path.join(data_dir, 'features_vars.pkl'))
 
 # For constant
 import time

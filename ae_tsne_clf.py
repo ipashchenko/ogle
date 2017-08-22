@@ -3,6 +3,8 @@ from keras.models import Model
 import numpy as np
 import os
 import pandas as pd
+from tempfile import mkdtemp
+from shutil import rmtree
 from sklearn import manifold
 from sklearn.base import TransformerMixin
 from pprint import pprint
@@ -12,56 +14,9 @@ from sklearn.ensemble import RandomForestClassifier
 import hyperopt
 from hyperopt import hp, fmin, tpe, STATUS_OK, Trials
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import Imputer, RobustScaler
+from sklearn.preprocessing import Imputer, RobustScaler, minmax_scale
 from sklearn.feature_selection import VarianceThreshold
-from utils import remove_correlated_features
-
-
-class AETransform(TransformerMixin):
-    def __init__(self, dim=30):
-        super(AETransform, self).__init__()
-        self.encoder = None
-        self.dim = dim
-
-    def fit(self, X, y=None, **fit_params):
-        ncol = X.shape[1]
-        input_dim = Input(shape=(ncol,))
-        encoding_dim = self.dim
-        # DEFINE THE ENCODER LAYER
-        encoded = Dense(encoding_dim, activation='relu')(input_dim)
-        # DEFINE THE DECODER LAYER
-        decoded = Dense(ncol, activation='sigmoid')(encoded)
-        # COMBINE ENCODER AND DECODER INTO AN AUTOENCODER MODEL
-        autoencoder = Model(input=input_dim, output=decoded)
-        # CONFIGURE AND TRAIN THE AUTOENCODER
-        autoencoder.compile(optimizer='adadelta', loss='binary_crossentropy')
-        autoencoder.fit(X, X, nb_epoch=20, batch_size=2000, shuffle=True,
-                        verbose=0)
-        # THE ENCODER TO EXTRACT THE REDUCED DIMENSION FROM THE ABOVE
-        # AUTOENCODER
-        self.encoder = Model(input=input_dim, output=encoded)
-        return self
-
-    def transform(self, X, **transform_params):
-        # (168, 30) vs. (168, 234)
-        return self.encoder.predict(X)
-
-
-class TSNETransform(TransformerMixin):
-    def __init__(self, n_components=2, random_state=0):
-        super(TSNETransform, self).__init__()
-        self.tsne = manifold.TSNE(n_components=n_components,
-                                  random_state=random_state, perplexity=30,
-                                  early_exaggeration=4)
-
-    def fit(self, X, y=None, **fit_params):
-        self.tsne.fit(X)
-
-    def transform(self, X, **transform_params):
-        return self.tsne.fit_transform(X)
-
-    def fit_transform(self, X, y=None, **fit_params):
-        return self.tsne.fit_transform(X)
+from utils import remove_correlated_features, AETransform, TSNETransform
 
 
 target = 'variable'
@@ -76,8 +31,11 @@ df = remove_correlated_features(df, r=0.95)
 features_names = list(df.columns)
 features_names.remove(target)
 X = df[features_names].values
+X = VarianceThreshold().fit_transform(X)
+X = minmax_scale(X)
 y = df[target].values
 
+cachedir = mkdtemp()
 
 kfold = StratifiedKFold(n_splits=4, shuffle=True, random_state=1)
 
@@ -85,13 +43,15 @@ kfold = StratifiedKFold(n_splits=4, shuffle=True, random_state=1)
 def objective(space):
     pprint(space)
     clf = RandomForestClassifier(class_weight={0: 1, 1: space['cw']},
-                                 n_estimators=300)
+                                 n_estimators=200, min_samples_leaf=5,
+                                 min_impurity_split=10, max_features=15,
+                                 max_depth=15)
 
     estimators = list()
-    estimators.append(('imputer', Imputer(missing_values='NaN', strategy='median',
-                                          axis=0, verbose=2)))
-    estimators.append(('variance_thresholder', VarianceThreshold()))
-    estimators.append(('scaler', RobustScaler()))
+    # estimators.append(('imputer', Imputer(missing_values='NaN', strategy='median',
+    #                                       axis=0, verbose=2)))
+    # estimators.append(('variance_thresholder', VarianceThreshold()))
+    # estimators.append(('scaler', RobustScaler()))
     estimators.append(('aue', AETransform()))
     # estimators.append(('tsne ', TSNETransform()))
     estimators.append(('clf', clf))
@@ -135,8 +95,10 @@ trials = Trials()
 best = fmin(fn=objective,
             space=space,
             algo=tpe.suggest,
-            max_evals=100,
+            max_evals=10,
             trials=trials)
+
+rmtree(cachedir)
 
 pprint(hyperopt.space_eval(space, best))
 best_pars = hyperopt.space_eval(space, best)

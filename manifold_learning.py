@@ -4,12 +4,12 @@ import numpy as np
 import pandas as pd
 from sklearn.pipeline import Pipeline
 from sklearn import manifold
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, minmax_scale
 from sklearn.feature_selection import VarianceThreshold
 import matplotlib.pyplot as plt
 from matplotlib.ticker import NullFormatter
 from mpl_toolkits.mplot3d import Axes3D
-from utils import remove_correlated_features
+from utils import remove_correlated_features, AETransform
 
 
 target = 'variable'
@@ -24,6 +24,8 @@ df = remove_correlated_features(df, r=0.95)
 features_names = list(df.columns)
 features_names.remove(target)
 X = df[features_names].values
+X = VarianceThreshold().fit_transform(X)
+X = minmax_scale(X)
 y = df[target].values
 
 n_neighbors = 10
@@ -35,9 +37,10 @@ plt.suptitle("Manifold Learning with %i cases, %i variables, %i neighbors"
              fontsize=14)
 
 estimators = list()
-estimators.append(('variance_thresholder', VarianceThreshold()))
-estimators.append(('scaler', StandardScaler()))
-tsne = manifold.TSNE(n_components=2, random_state=0, perplexity=30,
+# estimators.append(('variance_thresholder', VarianceThreshold()))
+# estimators.append(('scaler', StandardScaler()))
+estimators.append(('ae', AETransform(dim=32)))
+tsne = manifold.TSNE(n_components=2, random_state=0, perplexity=100,
                      early_exaggeration=4)
 estimators.append(('tsne', tsne))
 pipeline = Pipeline(estimators)
