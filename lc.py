@@ -271,6 +271,35 @@ class VariableStarLC(LC):
             lc.err = self.err
             yield lc
 
+    def generate_artificial_lc_files(self, bg_fname, n=1, out_dir=None):
+        """
+        Using fitted instance ``self`` and some file with other light curve
+        generate ``n`` files with artificial variable light curves.
+
+        :param bg_fname:
+            Path to file with some light curve that will be substituted by
+            simulated light curves.
+        :param n: (optional)
+            Number of different artificial light curves to create and save to
+            different files.
+        :param out_dir: (optional)
+            Directory to save created files. If ``None`` then use CWD. (default:
+            ``None``)
+
+        :return:
+            Creates ``n`` files with simulated light curves using fitted
+            instance of ``self``. Output files will be located in directory
+            ``out_dir`` and have names ``self.fname_1``, ``self.fname_2``, etc.
+        """
+        if out_dir is None:
+            out_dir = os.getcwd()
+
+        bg_lc = LC(bg_fname)
+        for i, lc in enumerate(self.generate(bg_lc, n_samples=n)):
+            outname = "{}_{}".format(self.fname, i+1)
+            print("Saving generated LC to {}".format(outname))
+            lc.save(os.path.join(out_dir, outname))
+
     def plot_fitted(self, fig=None):
         data = self.data[['mjd', 'mag', 'err']]
         data = np.atleast_2d(data)
@@ -386,13 +415,13 @@ class APeriodicLC(VariableStarLC):
 
 
 if __name__ == '__main__':
-    # Test features calculation
-    lc = PeriodicLC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_28995.dat')
-    features_fats = lc.generate_features_fats()
-    features_tsfresh = lc.generate_features_tsfresh()
-    lc.add_features(features_fats)
-    lc.add_features(features_tsfresh)
-    print(lc.features)
+    # # Test features calculation
+    # lc = PeriodicLC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_28995.dat')
+    # features_fats = lc.generate_features_fats()
+    # features_tsfresh = lc.generate_features_tsfresh()
+    # lc.add_features(features_fats)
+    # lc.add_features(features_tsfresh)
+    # print(lc.features)
 
     # # Test periodic variable
     # lc = PeriodicLC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_28995.dat')
@@ -413,3 +442,10 @@ if __name__ == '__main__':
     # lc = LC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_25801.dat')
     # lc.plot()
     # slope, intercept, R, p, _ = lc.estimate_trend()
+
+    # Test creation of files with artificial light curves.
+    lc = PeriodicLC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_28995.dat')
+    lc.fit(do_plot=True)
+    out_dir = '/home/ilya/github/ogle'
+    lc.generate_artificial_lc_files('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_180039.dat',
+                                    n=5, out_dir=out_dir)
