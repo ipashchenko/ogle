@@ -109,9 +109,10 @@ class LC(object):
         Generate features using ``tsfresh`` package.
 
         :param do_impute:
-            Use ``tsfresh`` impute function?
+            Logical. Use ``tsfresh`` impute function? (default: ``True``)
+
         :return:
-            Dataframe with features.
+            Pandas Dataframe with features.
         """
         df = self.data[['mjd', 'mag']]
         df.columns = ['time', 'value']
@@ -125,6 +126,12 @@ class LC(object):
         return extracted_features
 
     def generate_features_fats(self):
+        """
+        Generate features from FATS.
+
+        :return:
+            Pandas Dataframe with calculated features.
+        """
         data_available_combs = (['magnitude'],
                                 ['magnitude', 'time'],
                                 ['magnitude', 'time', 'error'])
