@@ -47,7 +47,7 @@ class LC(object):
         return len(self.data)
 
     def save(self, fname, sep=" "):
-        self.data.to_csv(fname, sep=sep)
+        self.data.to_csv(fname, sep=sep, header=False, index=False)
 
     def plot(self, fig=None, fmt='.k'):
         if not fig:
@@ -257,6 +257,7 @@ class VariableStarLC(LC):
             Instance of ``LC``.
         :param n_samples: (optional)
             Number of generated light curves to return. (default: ``1``)
+
         :return:
             Generator of ``LC`` instances.
         """
