@@ -121,7 +121,8 @@ class LC(object):
         extracted_features = extract_features(df, column_id="id",
                                               column_sort="time",
                                               column_value="value",
-                                              n_processes=1)
+                                              n_jobs=0,
+                                              disable_progressbar=True)
         if do_impute:
             extracted_features = impute(extracted_features)
         return extracted_features
