@@ -105,7 +105,7 @@ class LC(object):
     def err(self, other):
         self.data['err'] = other
 
-    def generate_features_tsfresh(self, do_impute=True):
+    def generate_features_tsfresh(self, do_impute=False):
         """
         Generate features using ``tsfresh`` package.
 
