@@ -11,6 +11,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import Imputer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import VarianceThreshold
+from utils import remove_correlated_features
 
 
 target = 'variable'
@@ -21,6 +22,7 @@ df_const = pd.read_pickle(os.path.join(data_dir, "features_const.pkl"))
 df_const[target] = 0
 df = pd.concat((df_vars, df_const), ignore_index=True)
 df = df.loc[:, ~df.columns.duplicated()]
+df = remove_correlated_features(df, r=0.95)
 features_names = list(df.columns)
 features_names.remove(target)
 X = df[features_names].values
