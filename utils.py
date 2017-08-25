@@ -29,15 +29,49 @@ def find_correlated_features(df, r=0.99):
     return names_correlated
 
 
-def remove_correlated_features(df, r=0.99, inplace=False):
+# def remove_correlated_features(df, r=0.99, inplace=False):
+#     names_correlated = find_correlated_features(df, r=r)
+#     sorted_names = list(toposort(names_correlated))
+#     for names in sorted_names:
+#         if inplace:
+#             df.drop(names, axis=1, inplace=True)
+#         else:
+#             df = df.drop(names, axis=1)
+#     return df
+
+
+def remove_correlated_features(df, r=0.99):
     names_correlated = find_correlated_features(df, r=r)
     sorted_names = list(toposort(names_correlated))
+
+    removed_features = list()
+
     for names in sorted_names:
-        if inplace:
-            df.drop(names, axis=1)
-        else:
-            df = df.drop(names, axis=1)
-    return df
+        for name in names:
+            # If feature not on the left - remove it
+            if name not in names_correlated.keys():
+                for key, value in names_correlated.items():
+                    try:
+                        names_correlated[key].remove(name)
+                        removed_features.append(name)
+                    except KeyError:
+                        pass
+
+    for name in names_correlated.keys():
+        if not names_correlated[name]:
+            for key, value in names_correlated.items():
+                try:
+                    names_correlated[key].remove(name)
+                    removed_features.append(name)
+                    names_correlated.pop(name)
+                except KeyError:
+                    pass
+
+    names = list(set(removed_features))
+    print("Removed features : ")
+    print(names)
+
+    return df.drop(names, axis=1)
 
 
 # TODO: Add # of layers and their dims, activation, etc. as parameters in
