@@ -1,10 +1,6 @@
 import numpy as np
 from collections import OrderedDict
 from toposort import toposort
-from keras.layers import Input, Dense
-from keras.models import Model
-from sklearn import manifold
-from sklearn.base import TransformerMixin, BaseEstimator
 
 
 def find_correlated_features(df, r=0.99):
@@ -72,77 +68,3 @@ def remove_correlated_features(df, r=0.99):
     print(names)
 
     return df.drop(names, axis=1)
-
-
-# TODO: Add # of layers and their dims, activation, etc. as parameters in
-# constructor
-class AETransform(TransformerMixin, BaseEstimator):
-    """
-    Autoencoder transformer. Note that because sigmoid activation used at the
-    final layer of the decoder the data must be in (0, 1) range for
-    "binary_crossentropy" loss to get positive values.
-    """
-    def __init__(self, dim=15):
-        super(AETransform, self).__init__()
-        self.encoder = None
-        self.autoencoder = None
-        self.dim = dim
-
-    def fit(self, X, y=None, **fit_params):
-        ncol = X.shape[1]
-        input_dim = Input(shape=(ncol,))
-        encoding_dim = self.dim
-
-        # Encoder layers
-        x = Dense(encoding_dim*6, activation='relu')(input_dim)
-        x = Dense(encoding_dim*4, activation='relu')(x)
-        x = Dense(encoding_dim*2, activation='relu')(x)
-        encoded = Dense(encoding_dim, activation='linear')(x)
-        # encoded = Dense(encoding_dim, activation='relu')(input_dim)
-
-        # Decoder layers
-        # x = Dense(encoding_dim*2, activation='relu')(encoded)
-        x = Dense(encoding_dim*2, activation='relu')(encoded)
-        x = Dense(encoding_dim*4, activation='relu')(x)
-        x = Dense(encoding_dim*6, activation='relu')(x)
-        decoded = Dense(ncol, activation='sigmoid')(x)
-        # decoded = Dense(ncol, activation='sigmoid')(encoded)
-
-        # Combine encoder & decoder into autoencoder model
-        self.autoencoder = Model(input=input_dim, output=decoded)
-
-        # Configure & train autoencoder
-        self.autoencoder.compile(optimizer='adam',
-                                 loss='binary_crossentropy')
-        self.autoencoder.fit(X, X, nb_epoch=1000, batch_size=2048, shuffle=True,
-                             verbose=2, **fit_params)
-        # Encoder to extract reduced dimensions from the above autoencoder
-        self.encoder = Model(input=input_dim, output=encoded)
-        return self
-
-    def summary(self):
-        if self.autoencoder is not None:
-            return self.autoencoder.summary()
-
-    def transform(self, X, **transform_params):
-        return self.encoder.predict(X)
-
-    # def fit_transform(self, X, y=None, **fit_params):
-    #     return self.fit(X, **fit_params).transform(X)
-
-
-class TSNETransform(TransformerMixin):
-    def __init__(self, n_components=2, random_state=0):
-        super(TSNETransform, self).__init__()
-        self.tsne = manifold.TSNE(n_components=n_components,
-                                  random_state=random_state, perplexity=30,
-                                  early_exaggeration=4)
-
-    def fit(self, X, y=None, **fit_params):
-        self.tsne.fit(X)
-
-    def transform(self, X, **transform_params):
-        return self.tsne.fit_transform(X)
-
-    def fit_transform(self, X, y=None, **fit_params):
-        return self.tsne.fit_transform(X)
