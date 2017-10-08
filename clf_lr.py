@@ -15,7 +15,7 @@ from utils import remove_correlated_features
 
 
 target = 'variable'
-data_dir = '/home/ilya/github/ogle'
+data_dir = '/home/ilya/Dropbox/papers/ogle/data/new_features'
 df_vars = pd.read_pickle(os.path.join(data_dir, "features_vars.pkl"))
 df_vars[target] = 1
 df_const = pd.read_pickle(os.path.join(data_dir, "features_const.pkl"))

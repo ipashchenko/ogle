@@ -12,21 +12,26 @@ from sklearn.preprocessing import Imputer
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.feature_selection import VarianceThreshold
 from utils import remove_correlated_features
+from tsfresh import select_features
 
 
 target = 'variable'
-data_dir = '/home/ilya/github/ogle'
-df_vars = pd.read_pickle(os.path.join(data_dir, "features_vars.pkl"))
+data_dir = '/home/ilya/Dropbox/papers/ogle2/data/new_features/'
+# data_dir = '/home/ilya/github/ogle'
+df_vars = pd.read_pickle(os.path.join(data_dir, "features_vars_sc20.pkl"))
 df_vars[target] = 1
-df_const = pd.read_pickle(os.path.join(data_dir, "features_const.pkl"))
+df_const = pd.read_pickle(os.path.join(data_dir, "features_const_sc20.pkl"))
 df_const[target] = 0
 df = pd.concat((df_vars, df_const), ignore_index=True)
 df = df.loc[:, ~df.columns.duplicated()]
 df = remove_correlated_features(df, r=0.95)
+nan_columns = df.columns[df.isnull().any()].tolist()
+df.drop(nan_columns, axis=1, inplace=True)
+y = df[target].values
+df = select_features(df, y)
 features_names = list(df.columns)
 features_names.remove(target)
 X = df[features_names].values
-y = df[target].values
 
 
 kfold = StratifiedKFold(n_splits=4, shuffle=True, random_state=1)
@@ -45,7 +50,6 @@ def objective(space):
     estimators.append(('imputer', Imputer(missing_values='NaN',
                                           strategy='median',
                                           axis=0, verbose=2)))
-    estimators.append(('variance_thresholder', VarianceThreshold()))
     estimators.append(('clf', clf))
     pipeline = Pipeline(estimators)
 
@@ -72,7 +76,7 @@ space = {'n_estimators': hp.choice('n_estimators', np.arange(300, 1600, 100,
                                                              dtype=int)),
          'max_depth': hp.choice('max_depth', np.arange(10, 30, dtype=int)),
          'max_features': hp.choice('max_features',
-                                   np.arange(10, 50, dtype=int)),
+                                   np.arange(5, 30, dtype=int)),
          'mss': hp.choice('mss', np.arange(2, 100, 2, dtype=int)),
          'cw': hp.uniform('cw', 1, 30),
          'msl': hp.choice('msl', np.arange(1, 30, dtype=int))}
