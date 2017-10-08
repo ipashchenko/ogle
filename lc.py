@@ -445,8 +445,10 @@ if __name__ == '__main__':
     # slope, intercept, R, p, _ = lc.estimate_trend()
 
     # Test creation of files with artificial light curves.
-    lc = PeriodicLC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_28995.dat')
+    # lc = PeriodicLC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_28995.dat')
+    lc = PeriodicLC('/home/ilya/Dropbox/papers/ogle2/data/lmc_sc20_i_170442.dat')
+
     lc.fit(do_plot=True)
-    out_dir = '/home/ilya/github/ogle'
-    lc.generate_artificial_lc_files('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_180039.dat',
-                                    n=5, out_dir=out_dir)
+    # out_dir = '/home/ilya/github/ogle'
+    # lc.generate_artificial_lc_files('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_180039.dat',
+    #                                 n=5, out_dir=out_dir)
