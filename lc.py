@@ -194,13 +194,37 @@ class LC(object):
         :return:
             Instance of ``LC`` with noised data.
         """
-        noised = deepcopy(self)
-        noised.mag += np.random.normal(0., sigma, len(noised))
+        lc = deepcopy(self)
+        lc.mag += np.random.normal(0., sigma, len(lc))
         if update_err:
-            noised.data['err'] = noised.data['err'].apply(lambda x:
+            lc.data['err'] = lc.data['err'].apply(lambda x:
                                                           np.sqrt(x**2 +
                                                                   sigma**2))
-        return noised
+        return lc
+
+    def remove_points(self, n_points, contigious=False):
+        """
+        Removes ``n_points`` from light curve.
+
+        :param n_points:
+            Number of points to remove.
+        :param contigious: (optional)
+            If ``True`` then points removed contigiously. (default: ``False``)
+        :return:
+            Instance of ``LC``.
+        """
+        assert len(self) > n_points
+        if not contigious:
+            id_remove = np.random.choice(np.arange(len(self)), n_points,
+                                         replace=False)
+        else:
+            low = np.random.uniform(0, len(self)-n_points)
+            high = low + n_points
+            id_remove = np.arange(low, high)
+        lc = deepcopy(self)
+        lc.data = lc.data.drop(id_remove)
+        lc.data.reset_index()
+        return lc
 
     def add_trend(self, a, b):
         """
@@ -249,27 +273,6 @@ class VariableStarLC(LC):
     def __init__(self, fname):
         super(VariableStarLC, self).__init__(fname)
         self._gp = None
-
-    def remove_points(self, n_points, contigious=False):
-        """
-        Removes ``n_points`` from light curve.
-
-        :param n_points:
-            Number of points to remove.
-        :param contigious: (optional)
-            If ``True`` then points removed contigiously. (default: ``False``)
-        """
-        assert len(self) > n_points
-        if not contigious:
-            id_remove = np.random.choice(np.arange(len(self)), n_points,
-                                         replace=False)
-        else:
-            low = np.random.uniform(0, len(self)-n_points)
-            high = low + n_points
-            id_remove = np.arange(low, high)
-
-        lc.data = lc.data.drop(id_remove)
-        lc.data.reset_index()
 
     def generate(self, lc, n_samples=1):
         """
