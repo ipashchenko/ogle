@@ -496,3 +496,21 @@ if __name__ == '__main__':
     # out_dir = '/home/ilya/github/ogle'
     # lc.generate_artificial_lc_files('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_180039.dat',
     #                                 n=5, out_dir=out_dir)
+
+    # Test kepler light curves read
+    lc = LC('/home/ilya/github/ogle/refilwe/kplr001026084_lc.tbl.dat', sep="\t")
+    features_fats = lc.generate_features_fats()
+    features_tsfresh = lc.generate_features_tsfresh()
+    lc.add_features(features_fats)
+    lc.add_features(features_tsfresh)
+    print(list(lc.features_names))
+
+    # Test ``generate_all_features``
+    lc = LC('/home/ilya/github/ogle/refilwe/kplr001026084_lc.tbl.dat', sep="\t")
+    lc.generate_all_features()
+    print(lc.features)
+
+    # The same but different separator
+    lc = LC('/home/ilya/github/ogle/refilwe/kplr000757280_lc.tbl.dat', sep=",")
+    lc.generate_all_features(tsfresh_do_impute=True)
+    print(lc.features)
