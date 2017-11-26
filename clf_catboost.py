@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import hyperopt
 from pprint import pprint
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import StratifiedKFold, train_test_split
 from sklearn.metrics import confusion_matrix
 from hyperopt import hp, fmin, tpe, STATUS_OK, Trials
 from sklearn.pipeline import Pipeline
@@ -66,8 +66,13 @@ def objective(space):
     for train_idx, test_idx in kfold.split(X, y):
         X_train, X_test = X[train_idx], X[test_idx]
         y_train, y_test = y[train_idx], y[test_idx]
-        fit_params = {"clf__eval_set": (X_test, y_test)}
-        pipeline.fit(X_train, y_train, **fit_params)
+        # Split train into actually training and evaluation sample
+        X_train_, X_val, y_train_, y_val = train_test_split(X_train, y_train,
+                                                            test_size=0.5,
+                                                            stratify=y_train,
+                                                            random_state=1)
+        fit_params = {"clf__eval_set": (X_val, y_val)}
+        pipeline.fit(X_train_, y_train_, **fit_params)
         y_preds = pipeline.predict(X_test)
         CMs.append(confusion_matrix(y[test_idx], y_preds))
     CM = np.sum(CMs, axis=0)
@@ -85,21 +90,21 @@ def objective(space):
     return{'loss': 1-f1, 'status': STATUS_OK}
 
 
-space = {'depth': hp.choice('depth', np.arange(1, 10, 1, dtype=int)),
-         'bagging_temperature': hp.uniform('bagging_temperature', 0.0, 1.0),
-         'cw': hp.uniform('cw', 0.0, 10.0),
-         'random_strength': hp.loguniform('random_strength', -0.5, 3.0),
-         'l2_leaf_reg': hp.uniform('l2_leaf_reg', 0.0, 20.0),
-         'rsm': hp.uniform('rsm', 0.0, 1.0),
-         'border_count': hp.choice('border_count', np.arange(1, 256, 1, dtype=int)),
-         'learning_rate': hp.loguniform('learning_rate', -5.0, -1.0)}
+space = {'depth': hp.choice('depth', np.arange(6, 10, 1, dtype=int)),
+         'bagging_temperature': hp.uniform('bagging_temperature', 0.7, 1.0),
+         'cw': hp.uniform('cw', 0.0, 5.0),
+         'random_strength': hp.loguniform('random_strength', 0.0, 1.3),
+         'l2_leaf_reg': hp.uniform('l2_leaf_reg', 3.0, 20.0),
+         'rsm': hp.uniform('rsm', 0.4, 1.0),
+         'border_count': hp.choice('border_count', np.arange(190, 230, 1, dtype=int)),
+         'learning_rate': hp.loguniform('learning_rate', -3.0, -1.2)}
 
 
 trials = Trials()
 best = fmin(fn=objective,
             space=space,
             algo=tpe.suggest,
-            max_evals=300,
+            max_evals=100,
             trials=trials)
 
 pprint(hyperopt.space_eval(space, best))
