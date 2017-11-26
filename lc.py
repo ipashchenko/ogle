@@ -71,6 +71,13 @@ class LC(object):
         else:
             self.features = pd.concat([self.features, df], axis=1)
 
+    # TODO: Unify feature-generating interface
+    def generate_all_features(self, tsfresh_do_impute=False):
+        df = self.generate_features_fats()
+        self.add_features(df)
+        df = self.generate_features_tsfresh(do_impute=tsfresh_do_impute)
+        self.add_features(df)
+
     @property
     def features_names(self):
         return self.features.columns
