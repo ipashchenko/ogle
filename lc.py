@@ -442,17 +442,24 @@ class APeriodicLC(VariableStarLC):
 
 if __name__ == '__main__':
     # # Test features calculation
+    lc = PeriodicLC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_28995.dat')
+    features_fats = lc.generate_features_fats()
+    features_tsfresh = lc.generate_features_tsfresh()
+    lc.add_features(features_fats)
+    lc.add_features(features_tsfresh)
+    print(list(lc.features_names))
+
+    # # Test removing points
     # lc = PeriodicLC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_28995.dat')
-    # features_fats = lc.generate_features_fats()
-    # features_tsfresh = lc.generate_features_tsfresh()
-    # lc.add_features(features_fats)
-    # lc.add_features(features_tsfresh)
-    # print(lc.features)
+    # lc_ = lc.remove_points(10)
+    # print(len(lc)-len(lc_))
+    # lc_ = lc.remove_points(10, contigious=True)
+    # print(len(lc)-len(lc_))
 
     # # Test periodic variable
     # lc = PeriodicLC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_28995.dat')
     # lc.fit(do_plot=True)
-    # # This LC gives us data points where to generate new LCs
+    # This LC gives us data points where to generate new LCs
     # lc_ = LC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_180039.dat')
     # for lc__ in lc.generate(lc_, n_samples=4):
     #     lc__.plot()
@@ -471,9 +478,9 @@ if __name__ == '__main__':
 
     # Test creation of files with artificial light curves.
     # lc = PeriodicLC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_28995.dat')
-    lc = PeriodicLC('/home/ilya/Dropbox/papers/ogle2/data/lmc_sc20_i_170442.dat')
-
-    lc.fit(do_plot=True)
+    # lc = PeriodicLC('/home/ilya/Dropbox/papers/ogle2/data/lmc_sc20_i_170442.dat')
+    #
+    # lc.fit(do_plot=True)
     # out_dir = '/home/ilya/github/ogle'
     # lc.generate_artificial_lc_files('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_180039.dat',
     #                                 n=5, out_dir=out_dir)
