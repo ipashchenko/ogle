@@ -21,9 +21,12 @@ dateparser = lambda x: Time(np.float32(x), format='jd')
 class LC(object):
     _column_names = ['mjd', 'mag', 'err']
 
-    def __init__(self, path):
+    def __init__(self, path, sep=None):
+        if sep is None:
+            sep = " "
+        self.sep = sep
         self.dir, self.fname = os.path.split(path)
-        self.data = pd.read_table(path, sep=" ", names=self._column_names,
+        self.data = pd.read_table(path, sep=sep, names=self._column_names,
                                   engine='python', usecols=[0, 1, 2])
                                   # parse_dates=['mjd'],
                                   # date_parser=dateparser)
@@ -46,7 +49,9 @@ class LC(object):
     def __len__(self):
         return len(self.data)
 
-    def save(self, fname, sep=" "):
+    def save(self, fname, sep=None):
+        if sep is None:
+            sep = self.sep
         self.data.to_csv(fname, sep=sep, header=False, index=False)
 
     def plot(self, fig=None, fmt='.k'):
@@ -442,12 +447,12 @@ class APeriodicLC(VariableStarLC):
 
 if __name__ == '__main__':
     # # Test features calculation
-    lc = PeriodicLC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_28995.dat')
-    features_fats = lc.generate_features_fats()
-    features_tsfresh = lc.generate_features_tsfresh()
-    lc.add_features(features_fats)
-    lc.add_features(features_tsfresh)
-    print(list(lc.features_names))
+    # lc = PeriodicLC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_28995.dat')
+    # features_fats = lc.generate_features_fats()
+    # features_tsfresh = lc.generate_features_tsfresh()
+    # lc.add_features(features_fats)
+    # lc.add_features(features_tsfresh)
+    # print(list(lc.features_names))
 
     # # Test removing points
     # lc = PeriodicLC('/home/ilya/Dropbox/papers/ogle2/data/sc19/lmc_sc19_i_28995.dat')
