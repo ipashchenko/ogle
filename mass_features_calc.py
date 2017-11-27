@@ -54,6 +54,7 @@ if __name__ == "__main__":
     kepler_files = glob.glob(os.path.join(data_dir, "kplr*"))
     features_df = calculate_features_for_files(kepler_files, sep="\t",
                                                threads=4)
+    features_df.to_csv("kepler_features.csv")
 
 
     # data_dir = "/home/ilya/Dropbox/papers/ogle2/data"
