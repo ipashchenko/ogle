@@ -28,9 +28,18 @@ class MyPool(multiprocessing.pool.Pool):
     Process = NoDaemonProcess
 
 
-def calculate_features_for_file(fname, sep=None):
+def calculate_features_for_file(fname, sep=None, feature_set=None):
     lc = LC(fname, sep=sep)
-    lc.generate_all_features()
+    if feature_set is None:
+        lc.generate_all_features()
+    elif feature_set == "fats":
+        df = lc.generate_features_fats()
+        lc.add_features(df)
+    elif feature_set =="tsfresh":
+        df = lc.generate_features_tsfresh()
+        lc.add_features(df)
+    else:
+        raise Exception("feature_set argument must be fats, tsfresh or None!")
     return lc.features
 
 
@@ -38,10 +47,11 @@ def helper(fname_sep):
     return calculate_features_for_file(*fname_sep)
 
 
-def calculate_features_for_files(fnames, sep=None, threads=4):
+def calculate_features_for_files(fnames, sep=None, feature_set=None, threads=4):
     pool = MyPool(processes=threads)
 
-    result = pool.map(helper, itertools.izip(fnames, itertools.repeat(sep)))
+    result = pool.map(helper, itertools.izip(fnames, itertools.repeat(sep),
+                                             itertools.repeat(feature_set)))
     pool.close()
     pool.join()
     return pd.concat(result, axis=0, ignore_index=True)
@@ -52,9 +62,10 @@ if __name__ == "__main__":
     # For several kepler light curve files
     data_dir = "/home/ilya/github/ogle/refilwe"
     kepler_files = glob.glob(os.path.join(data_dir, "kplr*"))
+    # Calculate only fats features
     features_df = calculate_features_for_files(kepler_files, sep="\t",
-                                               threads=4)
-    features_df.to_csv("kepler_features.csv")
+                                               feature_set="fats", threads=4)
+    features_df.to_csv(os.path.join(data_dir, "kepler_features.csv"))
 
 
     # data_dir = "/home/ilya/Dropbox/papers/ogle2/data"
